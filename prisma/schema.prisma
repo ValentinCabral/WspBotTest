@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  sales
+  warehouse
+  readonly
+}
+
+enum OrderStatus {
+  pending
+  approved
+  preparing
+  shipped
+  delivered
+  cancelled
+}
+
+model Company {
+  id           String   @id @default(cuid())
+  name         String
+  baseCurrency String   @default("ARS")
+  users        User[]
+  customers    Customer[]
+  products     Product[]
+  orders       Order[]
+  exchangeRates ExchangeRate[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  googleSub String?
+  email     String
+  fullName  String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, email])
+  @@index([companyId, role])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  taxId       String?
+  segment     String?
+  creditLimit Decimal  @db.Decimal(14, 2) @default(0)
+  balance     Decimal  @db.Decimal(14, 2) @default(0)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, segment])
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id])
+  sku              String
+  name             String
+  category         String?
+  tags             String?
+  costPrice        Decimal  @db.Decimal(14, 2)
+  salePrice        Decimal  @db.Decimal(14, 2)
+  minPurchaseQty   Int      @default(1)
+  stockAvailable   Int      @default(0)
+  stockReserved    Int      @default(0)
+  lowStockThreshold Int     @default(5)
+  currency         String   @default("ARS")
+  isActive         Boolean  @default(true)
+  orderItems       OrderItem[]
+  stockMovements   StockMovement[]
+  createdAt        DateTime @default(now())
+
+  @@unique([companyId, sku])
+  @@index([companyId, category])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id])
+  customerId     String
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  assignedUserId String?
+  status         OrderStatus @default(pending)
+  shippingCost   Decimal     @db.Decimal(14, 2) @default(0)
+  discountTotal  Decimal     @db.Decimal(14, 2) @default(0)
+  notes          String?
+  subtotal       Decimal     @db.Decimal(14, 2) @default(0)
+  total          Decimal     @db.Decimal(14, 2) @default(0)
+  currency       String      @default("ARS")
+  items          OrderItem[]
+  payments       Payment[]
+  createdAt      DateTime    @default(now())
+
+  @@index([companyId, status, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(14, 2)
+  unitCost  Decimal @db.Decimal(14, 2)
+  discount  Decimal @db.Decimal(14, 2) @default(0)
+}
+
+model Payment {
+  id      String   @id @default(cuid())
+  orderId String
+  order   Order    @relation(fields: [orderId], references: [id])
+  amount  Decimal  @db.Decimal(14, 2)
+  method  String
+  paidAt  DateTime @default(now())
+}
+
+model StockMovement {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  movementType String
+  quantity     Int
+  reason       String?
+  createdBy    String?
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, productId, createdAt])
+}
+
+model ExchangeRate {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  fromCurrency String
+  toCurrency   String
+  rate         Decimal  @db.Decimal(14, 6)
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, fromCurrency, toCurrency, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}

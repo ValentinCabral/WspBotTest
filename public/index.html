@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WholesaleHub B2B</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>WholesaleHub B2B</h1>
+      <button id="loginBtn">Ingresar con Google (demo)</button>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <button data-view="dashboard">Dashboard</button>
+        <button data-view="products">Productos</button>
+        <button data-view="orders">Pedidos</button>
+        <button data-view="customers">Clientes</button>
+      </aside>
+
+      <section class="content">
+        <div id="status">Sin sesión</div>
+        <div id="view"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
