@@ -1,18 +1,19 @@
 {
-  "name": "whatsapp-chatbot",
-  "version": "1.0.0",
-  "description": "",
+  "name": "wholesalehub-b2b",
+  "version": "0.1.0",
+  "description": "MVP inicial de gestión mayorista B2B SaaS-ready",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "node --check index.js && node --check src/app.js && node --check src/auth.js && node --check src/db.js"
   },
-  "keywords": [],
+  "keywords": [
+    "b2b",
+    "wholesale",
+    "saas",
+    "inventory"
+  ],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "body-parser": "^1.20.2",
-    "express": "^4.19.2",
-    "sqlite3": "^5.1.7",
-    "twilio": "^5.2.2"
-  }
+  "license": "ISC"
 }
