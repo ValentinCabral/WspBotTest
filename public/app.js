@@ -2,24 +2,62 @@ const state = { token: null, activeView: 'dashboard' };
 const view = document.getElementById('view');
 const statusNode = document.getElementById('status');
 
-function api(path, options = {}) {
-  return fetch(path, {
+const IS_GITHUB_PAGES = window.location.hostname.endsWith('github.io');
+
+const mockData = {
+  dashboard: {
+    totalProducts: 3,
+    lowStockAlerts: 1,
+    monthlySales: 337000,
+    pendingOrders: 2
+  },
+  products: [
+    { sku: 'TM-AUR-001', name: 'Auriculares BT Pro', stock_available: 120, sale_price: 18500, margin_percent: 54.17 },
+    { sku: 'TM-RGB-002', name: 'Aro de Luz RGB', stock_available: 60, sale_price: 14900, margin_percent: 65.56 },
+    { sku: 'TM-POW-003', name: 'PowerBank 20k', stock_available: 35, sale_price: 23000, margin_percent: 53.33 }
+  ],
+  orders: [
+    { id: 1, customer_name: 'Comercial Sol', status: 'approved', total: 337000, assigned_user_name: 'Vendedora Demo' },
+    { id: 2, customer_name: 'Revendedor Norte', status: 'pending', total: 189500, assigned_user_name: 'Admin TrendMax' }
+  ],
+  customers: [
+    { name: 'Comercial Sol', segment: 'premium', credit_limit: 1500000, balance: 350000 },
+    { name: 'Revendedor Norte', segment: 'estandar', credit_limit: 700000, balance: 100000 }
+  ]
+};
+
+async function api(path, options = {}) {
+  if (IS_GITHUB_PAGES) {
+    if (path === '/api/dashboard') return mockData.dashboard;
+    if (path === '/api/products') return mockData.products;
+    if (path === '/api/orders') return mockData.orders;
+    if (path === '/api/customers') return mockData.customers;
+    if (path === '/api/auth/google') {
+      return {
+        token: 'github-pages-demo-token',
+        user: { full_name: 'Demo Usuario', role: 'admin' }
+      };
+    }
+    throw new Error('Endpoint no disponible en modo GitHub Pages');
+  }
+
+  const response = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
       ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
     }
-  }).then(async (response) => {
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Error de API');
-    return data;
   });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Error de API');
+  return data;
 }
 
 async function login() {
   const email = prompt('Email demo (admin@trendmax.com o ventas@trendmax.com)');
-  if (!email) return;
+  if (!email && !IS_GITHUB_PAGES) return;
 
   try {
     const data = await api('/api/auth/google', {
@@ -28,7 +66,7 @@ async function login() {
     });
 
     state.token = data.token;
-    statusNode.textContent = `Sesión: ${data.user.full_name} (${data.user.role})`;
+    statusNode.textContent = `Sesión: ${data.user.full_name} (${data.user.role})${IS_GITHUB_PAGES ? ' · GitHub Pages demo' : ''}`;
     loadView(state.activeView);
   } catch (error) {
     alert(error.message);
@@ -55,7 +93,7 @@ async function loadView(viewName) {
   state.activeView = viewName;
 
   if (!state.token) {
-    view.innerHTML = '<p>Inicia sesión para ver el sistema.</p>';
+    view.innerHTML = `<p>${IS_GITHUB_PAGES ? 'Haz click en "Ingresar" para abrir el demo en GitHub Pages.' : 'Inicia sesión para ver el sistema.'}</p>`;
     return;
   }
 
@@ -121,5 +159,9 @@ document.getElementById('loginBtn').addEventListener('click', login);
 document.querySelectorAll('[data-view]').forEach((button) => {
   button.addEventListener('click', () => loadView(button.dataset.view));
 });
+
+if (IS_GITHUB_PAGES) {
+  statusNode.textContent = 'Modo demo GitHub Pages: backend no ejecuta en Pages';
+}
 
 loadView('dashboard');
